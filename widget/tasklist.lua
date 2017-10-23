@@ -58,6 +58,7 @@ local function default_style()
 		icons       = {},
 		timeout     = 0.05,
 		custom_icon = false,
+		task        = {},
 		task_margin = { 5, 5, 0, 0 }
 	}
 	style.winmenu = {
@@ -346,7 +347,9 @@ end
 local function tasklist_construct(client_groups, layout, data, buttons, style)
 
 	layout:reset()
-	layout:set_max_widget_size(style.width + style.task_margin[1] + style.task_margin[2])
+	local task_full_width = style.width + style.task_margin[1] + style.task_margin[2]
+	layout:set_max_widget_size(task_full_width)
+	layout:set_forced_width(task_full_width * #client_groups)
 
 	-- construct tasklist
 	for i, c_group in ipairs(client_groups) do
@@ -368,7 +371,7 @@ local function tasklist_construct(client_groups, layout, data, buttons, style)
 
 		-- construct
 		layout:add(task.l)
-   end
+	end
 end
 
 -- Construct or update tasktip
@@ -634,6 +637,7 @@ function redtasklist.new(args, style)
 
 	local style = redutil.table.merge(default_style(), style or {})
 	if style.custom_icon then style.icons = dfparser.icon_list(style.parser) end
+	if style.task.width  then style.width = style.task.width end
 
 	redtasklist.winmenu:init(style.winmenu)
 	redtasklist.tasktip:init(args.buttons, style.tasktip)
