@@ -266,6 +266,10 @@ function menu:item_enter(num, opts)
 	local opts = opts or {}
 	local item = self.items[num]
 
+	if item and self.theme.auto_expand and opts.hover and item.child then
+		self.items[num].child:show()
+	end
+
 	if num == nil or self.sel == num or not item then
 		return
 	elseif self.sel then
@@ -274,11 +278,12 @@ function menu:item_enter(num, opts)
 
 	item._background:set_fg(item.theme.color.highlight)
 	item._background:set_bg(item.theme.color.main)
-	self.sel = num
-
-	if self.theme.auto_expand and opts.hover and self.items[num].child then
-		self.items[num].child:show()
+	if item.icon and item.theme.color.left_icon then item.icon:set_color(item.theme.color.highlight) end
+	if item.right_icon and
+	   (item.child and item.theme.color.submenu_icon or not item.child and item.theme.color.right_icon) then
+		item.right_icon:set_color(item.theme.color.highlight)
 	end
+	self.sel = num
 end
 
 -- Unselect item
@@ -289,6 +294,15 @@ function menu:item_leave(num)
 	if item then
 		item._background:set_fg(item.theme.color.text)
 		item._background:set_bg(item.theme.color.wibox)
+		if item.icon and item.theme.color.left_icon then item.icon:set_color(item.theme.color.left_icon) end
+		if item.right_icon then
+			if item.child and item.theme.color.submenu_icon then
+				-- if there's a child menu, this is a submenu icon
+				item.right_icon:set_color(item.theme.color.submenu_icon)
+			elseif item.theme.color.right_icon then
+				item.right_icon:set_color(item.theme.color.right_icon)
+			end
+		end
 		if item.child then item.child:hide() end
 	end
 end
