@@ -317,6 +317,7 @@ function player:initialize_info()
 			local function parse_dbus_value(ident)
 				local regex = "(" .. ident .. ")%s+([a-z0-9]+)%s+(.-)%s-%)\n"
 				_, _, value = output:match(regex)
+				if not value then return nil end
 
 				-- check for int64 type field
 				int64_val = value:match("int64%s+(%d+)")
@@ -365,7 +366,7 @@ function player:change_volume(step)
 	if     v > 1 then v = 1
 	elseif v < 0 then v = 0 end
 
-	self.last.volume = nil
+	self.last.volume = v
 	awful.spawn.with_shell(self.command.set_volume .. v)
 end
 

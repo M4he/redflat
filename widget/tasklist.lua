@@ -38,11 +38,12 @@ local dfparser = require("redflat.service.dfparser")
 local redtasklist = { filter = {}, winmenu = {}, tasktip = {}, action = {}, mt = {}, }
 
 local last = {
-	client      = nil,
-	group       = nil,
-	client_list = nil,
-	screen      = mouse.screen,
-	tag_screen  = mouse.screen
+	client         = nil,
+	group          = nil,
+	client_list    = nil,
+	screen         = mouse.screen,
+	tag_screen     = mouse.screen,
+	screen_clients = {}
 }
 
 -- Generate default theme vars
@@ -72,6 +73,7 @@ local function default_style()
 		state_iconsize = { width = 20, height = 20 },
 		sep_margin     = { 3, 3, 5, 5 },
 		tagmenu        = { icon_margin = { 2, 2, 2, 2 } },
+		hide_action    = { min = true, move = true, max = false, add = false },
 		color          = { main = "#b1222b", icon = "#a0a0a0", gray = "#404040" }
 	}
 	style.tasktip = {
@@ -142,14 +144,13 @@ local function tagmenu_rebuild(menu, submenu_index, style)
 	for _, index in ipairs(submenu_index) do
 			local new_items
 			if index == 1 then
-				new_items = tagmenu_items(function(t) last.client:move_to_tag(t) end, style)
+				new_items = tagmenu_items(redtasklist.winmenu.movemenu_action, style)
 			else
-				new_items = tagmenu_items(function(t) last.client:toggle_tag(t) end, style)
+				new_items = tagmenu_items(redtasklist.winmenu.addmenu_action, style)
 			end
 			menu.items[index].child:replace_items(new_items)
 	end
 end
-
 
 -- Function to update tag submenu icons
 --------------------------------------------------------------------------------
@@ -449,9 +450,13 @@ function redtasklist.winmenu:init(style)
 
 	-- Window managment functions
 	--------------------------------------------------------------------------------
+	self.hide_check = function(action)
+		if style.hide_action[action] then self.menu:hide() end
+	end
+
 	local close    = function() last.client:kill() end
-	local minimize = function() last.client.minimized = not last.client.minimized end
-	local maximize = function() last.client.maximized = not last.client.maximized end
+	local minimize = function() last.client.minimized = not last.client.minimized; self.hide_check("min") end
+	-- local maximize = function() last.client.maximized = not last.client.maximized; self.hide_check("max")end
 
 	-- Create array of state icons
 	-- associate every icon with action and state indicator
@@ -509,8 +514,19 @@ function redtasklist.winmenu:init(style)
 
 	-- Construct tag submenus ("move" and "add")
 	------------------------------------------------------------
-	local movemenu_items = tagmenu_items(function(t) last.client:move_to_tag(t) end, style)
-	local addmenu_items  = tagmenu_items(function(t) last.client:toggle_tag(t)  end, style)
+
+	-- menu item actions
+	self.movemenu_action = function(t)
+		last.client:move_to_tag(t); awful.layout.arrange(t.screen); self.hide_check("move")
+	end
+
+	self.addmenu_action = function(t)
+		last.client:toggle_tag(t); awful.layout.arrange(t.screen); self.hide_check("add")
+	end
+
+	-- menu items
+	local movemenu_items = tagmenu_items(self.movemenu_action, style)
+	local addmenu_items = tagmenu_items(self.addmenu_action, style)
 
 	-- Create menu
 	------------------------------------------------------------
@@ -675,7 +691,7 @@ function redtasklist.new(args, style)
 		local clients = visible_clients(filter, cs)
 		local client_groups = group_task(clients, style.need_group)
 
-		last.sorted_list = sort_list(client_groups)
+		last.screen_clients[cs] = sort_list(client_groups)
 
 		tasklist_construct(client_groups, tasklist, data, args.buttons, style)
 	end
@@ -763,12 +779,12 @@ end
 
 -- switch to next task
 function redtasklist.action.switch_next(args)
-	switch_focus(last.sorted_list)
+	switch_focus(last.screen_clients[mouse.screen])
 end
 
 -- switch to previous task
 function redtasklist.action.switch_prev(args)
-	switch_focus(last.sorted_list, true)
+	switch_focus(last.screen_clients[mouse.screen], true)
 end
 
 
