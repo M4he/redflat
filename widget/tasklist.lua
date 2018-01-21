@@ -73,7 +73,15 @@ local function default_style()
 		state_iconsize = { width = 20, height = 20 },
 		sep_margin     = { 3, 3, 5, 5 },
 		tagmenu        = { icon_margin = { 2, 2, 2, 2 } },
-		hide_action    = { min = true, move = true, max = false, add = false },
+		hide_action    = { min = true,
+		                   move = true,
+		                   max = false,
+		                   add = false,
+		                   floating = false,
+		                   sticky = false,
+		                   ontop = false,
+		                   below = false,
+		                   maximized = false },
 		color          = { main = "#b1222b", icon = "#a0a0a0", gray = "#404040" }
 	}
 	style.tasktip = {
@@ -326,7 +334,7 @@ local function tasktip_line(style)
 
 	-- tasktip line metods
 	function line:set_text(text)
-		line.tb:set_text(text)
+		line.tb:set_markup(text)
 		line.field:set_fg(style.color.text)
 		line.field:set_bg(style.color.wibox)
 	end
@@ -416,7 +424,7 @@ local function construct_tasktip(c_group, layout, data, buttons, style)
 			data[i] = line
 		end
 
-		line:set_text(awful.util.escape(c.name))
+		line:set_text(awful.util.escape(c.name) or "Untitled")
 		tb_w, tb_h = line.tb:get_preferred_size()
 
 		-- set state highlight only for grouped tasks
@@ -455,7 +463,7 @@ function redtasklist.winmenu:init(style)
 		if style.hide_action[action] then self.menu:hide() end
 	end
 
-	local close    = function() last.client:kill() end
+	local close    = function() last.client:kill(); self.menu:hide() end
 	local minimize = function() last.client.minimized = not last.client.minimized; self.hide_check("min") end
 	-- local maximize = function() last.client.maximized = not last.client.maximized; self.hide_check("max")end
 
@@ -465,7 +473,7 @@ function redtasklist.winmenu:init(style)
 	local function icon_table_ganerator(property)
 		return {
 			icon      = style.icon[property] or style.icon.unknown,
-			action    = function() last.client[property] = not last.client[property] end,
+			action    = function() last.client[property] = not last.client[property]; self.hide_check(property) end,
 			indicator = function(c) return c[property] end
 		}
 	end
